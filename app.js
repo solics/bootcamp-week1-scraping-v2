@@ -1,12 +1,125 @@
-const scrapingProfile = async ()=>{
-    //Utils
-    const wait = (milliseconds)=>{
+//Utils
+const utils = {
+    wait: (milliseconds)=>{
         return new Promise(function(resolve){
             setTimeout(function() {
                 resolve();
             }, milliseconds);
         });
-    };
+    }
+}
+
+const scrapingList = () => {
+    const selectorResults = {
+        results : '.reusable-search__entity-results-list',
+        element: '.entity-result__item',
+        clickeableElement: '.entity-result__title-line a',
+        seeMore: '.search-results__cluster-bottom-banner a'
+    }
+    
+    const createPopupResults = (resultsObj) => {
+        const styleBackground = `
+            position: fixed;
+            z-index: 2000;
+            width: 100%;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            overflow: visible;
+            display: flex;
+            background-color: #00000055;
+            justify-content: center;
+            align-items:center;
+            flex-flow: column;
+        `
+        const styleDiv = `
+            z-index: 1000;
+            width: 800px;
+            height: 90%;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            background-color: #0b66c3;
+            color: white;
+            font-size: 30px;
+            justify-content: center;
+            align-items:center;
+            flex-flow: column;
+        `
+        const stylePre = `
+            width: 100%;
+            font-size: 14px;
+            overflow: auto;
+        `
+
+        const styleBtn = `
+            cursor: pointer;
+            background: #0b66c3;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: white;
+            font-weight: 600;
+        `
+        const background = document.createElement('div')
+        background.style = styleBackground
+        background.id = "krowdy-background"
+        
+        const div = document.createElement('div')
+        div.id = "krowdy-message"
+        div.style = styleDiv
+
+        const btnClose = document.createElement('button')
+        btnClose.style = styleBtn
+        btnClose.innerText = 'Close window'
+        btnClose.addEventListener('click', () => {
+            const body = document.querySelector('body')
+            body.removeChild(background)
+        })
+        const pre = document.createElement('pre')
+        pre.style = stylePre
+        let preContent = ''
+        for(let obj of resultsObj) {
+            preContent += JSON.stringify(obj,null,2)
+        }
+        pre.innerHTML = preContent
+        div.appendChild(pre)
+        background.appendChild(btnClose)
+        background.appendChild(div)
+        const bodyElement = document.querySelector('body')
+        bodyElement.appendChild(background)
+    }
+    const initScrapingList = async () => {
+        const { results, element, clickeableElement, seeMore } = selectorResults
+        const seeMoreResults = document.querySelector(seeMore)
+        // if(seeMoreResults) {
+        if(false) {
+            seeMoreResults.click()
+            await utils.wait(4000)
+        }
+        const objResults = []
+        let index = 0
+        
+        do {
+            await utils.wait(3000)
+            blockResults = document.querySelector(results)
+            listResults = blockResults.querySelectorAll(element)
+            if(!listResults || !listResults[index]) break;
+            const profileToClick = listResults[index].querySelector(clickeableElement)
+            profileToClick.click()
+            const objResult = await scrapingProfile()
+            objResults.push(objResult)
+            console.log('resultados', objResults)
+            history.back()
+            index++
+        } while(index < Array.from(listResults).length)
+
+        createPopupResults(objResults)
+    }
+
+    initScrapingList()
+}
+const scrapingProfile = async ()=>{
 
     const autoscrollToElement = async function(cssSelector){
 
@@ -19,10 +132,10 @@ const scrapingProfile = async ()=>{
             let currentScrollTop = window.scrollY
     
     
-            if(maxScrollTop == currentScrollTop || elementScrollTop <= currentScrollTop)
+            if(Math.abs(maxScrollTop - currentScrollTop) < 5 || elementScrollTop <= currentScrollTop)
                 break;
     
-            await wait(32)
+            await utils.wait(32)
     
             let newScrollTop = Math.min(currentScrollTop + 20, maxScrollTop);
             window.scrollTo(0,newScrollTop)
@@ -134,45 +247,68 @@ const scrapingProfile = async ()=>{
         const educationItems = document.querySelectorAll(selector.list)
         const educationArray = Array.from(educationItems)
         const educations = educationArray.map(el=>{
-            const institution = el.querySelector(selector.institution).innerText
-            const career = el.querySelector(selector.career).innerText
-            const date = el.querySelector(selector.date).innerText
+            const institution = el.querySelector(selector.institution)?.innerText
+            const career = el.querySelector(selector.career)?.innerText
+            const date = el.querySelector(selector.date)?.innerText
             return {institution,career,date}
         })
         return educations
     }
 
     const createPopup = ()=>{
-        const styleDiv = "position: fixed;z-index: 2000;width:100%; top: 0px;left: 0px;overflow: visible;display: flex;align-items: flex-end;background-color: lightgray;font-size: 10px;padding: 10px;";
-        const stylePre = "position: relative;max-height: 400px;overflow: scroll;width: 100%;"
+        const styleBackground = `
+            position: fixed;
+            z-index: 2000;
+            width: 100%;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            overflow: visible;
+            display: flex;
+            background-color: #00000055;
+            justify-content: center;
+            align-items:center;
+        `
+        const styleDiv = `
+            z-index: 1000;
+            width: 500px;
+            height: 100px;
+            overflow: visible;
+            display: flex;
+            align-items: flex-end;
+            background-color: #0b66c3;
+            padding: 10px;
+            color: white;
+            font-size: 30px;
+            justify-content: center;
+            align-items:center;
+            flex-flow: column;
+        `
+        const background = document.createElement('div')
+        background.style = styleBackground
+        background.id = "krowdy-background"
+        
         const div = document.createElement('div')
         div.id = "krowdy-message"
         div.style = styleDiv
-
-        const pre = document.createElement('pre')
-        pre.id = "krowdy-pre"
-        pre.style = stylePre
-
-        const button = document.createElement('button')
+        div.innerHTML=`
+            <p style="color:white;font-size:inherit">Scanning profile...</p>
+            <img style="width:30px" src="https://tradinglatam.com/wp-content/uploads/2019/04/loading-gif-png-4.gif" />
+        `
         
-        button.id = "krowdy-button"
-        button.style = "background: gray;border: 2px solid;padding: 8px;"
-        button.innerText ="Aceptar"
-
+        background.appendChild(div)
         const bodyElement = document.querySelector('div.body')
-        
-        bodyElement.appendChild(div)
-
-        pre.innerText = "Estamos extrayendo la información!!!!"
-        div.appendChild(pre)
-        div.appendChild(button)
-        return {div,pre,button}
+        bodyElement.appendChild(background)
+        return { div }
     }
     
     //Scroll to all information
-    const {div,pre,button} = createPopup()
+    await utils.wait(1000)
 
-    pre.innerText = 'Scaneando el perfil'
+    const { div } = createPopup()
+
+    await utils.wait(5000)
+
     await autoscrollToElement('body')
     await clickOnMoreResume()
     
@@ -182,18 +318,19 @@ const scrapingProfile = async ()=>{
     const educationInformation = await getEducationInformation()
     
     
-    pre.innerText = 'Ya tenemos las información del perfil'
-    await wait(1000)
+    div.innerHTML = `<p style="color:white;font-size:inherit">Scan finished</p>`
+    // await utils.wait(1000)
 
     //Setting data to send information
     const profile = {...personalInformation, experiences:experienceInformation, educations:educationInformation }
-    pre.innerText = JSON.stringify(profile,null,2)
+    // pre.innerText = JSON.stringify(profile,null,2)
 
-    button.addEventListener("click",()=>{
-        //Necesito el fetch
+    // button.addEventListener("click",()=>{
+    //     //Necesito el fetch
+    //     div.remove()
+    // })
 
-        div.remove()
-    })
+    return(profile)
 }
 
 
@@ -204,6 +341,7 @@ chrome.runtime.onConnect.addListener(function(port) {
     port.onMessage.addListener(function(msg) {
       const {acction} = msg
       console.log(acction)
-      if (acction=="scraping") scrapingProfile()
+    //   if (acction=="scraping") scrapingProfile()
+      if (acction=="scraping") scrapingList()
     });
   })})();
